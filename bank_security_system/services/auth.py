@@ -19,6 +19,7 @@ import datetime
 jwt = JWTManager()
 encryption_service = EncryptionService()
 
+
 class AuthService:
     def __init__(self):
         self.rbac_service = None
@@ -34,7 +35,7 @@ class AuthService:
         def add_claims_to_access_token(user):
             return {
                 "roles": [role.name for role in user.roles],
-                "mfa_enabled": user.mfa_enabled
+                "mfa_enabled": user.mfa_enabled,
             }
 
         # 检查 Token 是否在黑名单中
@@ -48,9 +49,7 @@ class AuthService:
         user = User.query.filter_by(username=username).first()
         if not user or not user.check_password(password):
             audit_service.log_activity(
-                None,  # 匿名用户
-                "login_failed",
-                f"user:{username}"
+                None, "login_failed", f"user:{username}"  # 匿名用户
             )
             return {"error": "Invalid credentials"}, 401
 
@@ -58,23 +57,15 @@ class AuthService:
             if not otp:
                 return {"mfa_required": True}, 401
             if not pyotp.TOTP(user.mfa_secret).verify(otp):
-                audit_service.log_activity(
-                    user.id,
-                    "mfa_failed",
-                    f"user:{username}"
-                )
+                audit_service.log_activity(user.id, "mfa_failed", f"user:{username}")
                 return {"error": "Invalid OTP"}, 401
 
         # 记录成功登录
-        audit_service.log_activity(
-            user.id,
-            "login_success",
-            f"user:{username}"
-        )
+        audit_service.log_activity(user.id, "login_success", f"user:{username}")
         return {
             "access_token": self._create_tokens(user)["access_token"],
             "refresh_token": self._create_tokens(user)["refresh_token"],
-            "expires_in": current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].seconds
+            "expires_in": current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].seconds,
         }
 
     def _create_tokens(self, user):
@@ -84,7 +75,7 @@ class AuthService:
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "expires_in": current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].seconds
+            "expires_in": current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].seconds,
         }
 
     def refresh_access_token(self, refresh_token: str) -> dict:
@@ -96,27 +87,15 @@ class AuthService:
             user_id = payload["sub"]
             user = User.query.get(user_id)
             if not user:
-                audit_service.log_activity(
-                    None,
-                    "refresh_failed",
-                    "Invalid user"
-                )
+                audit_service.log_activity(None, "refresh_failed", "Invalid user")
                 return {"error": "Invalid user"}, 401
 
             # 记录刷新操作
-            audit_service.log_activity(
-                user.id,
-                "token_refreshed",
-                f"user:{user.id}"
-            )
+            audit_service.log_activity(user.id, "token_refreshed", f"user:{user.id}")
             new_access_token = create_access_token(identity=user)
             return {"access_token": new_access_token}
         except JWTDecodeError as e:
-            audit_service.log_activity(
-                None,
-                "refresh_failed",
-                str(e)
-            )
+            audit_service.log_activity(None, "refresh_failed", str(e))
             return {"error": "Invalid refresh token"}, 401
 
     def revoke_token(self, token: str):
@@ -128,17 +107,9 @@ class AuthService:
             jti = payload.get("jti")
             if jti:
                 self.token_blacklist.add(jti)
-                audit_service.log_activity(
-                    None,
-                    "token_revoked",
-                    f"jti:{jti}"
-                )
+                audit_service.log_activity(None, "token_revoked", f"jti:{jti}")
         except Exception as e:
-            audit_service.log_activity(
-                None,
-                "revoke_failed",
-                str(e)
-            )
+            audit_service.log_activity(None, "revoke_failed", str(e))
 
     def get_current_user(self) -> User:
         """获取当前认证用户"""
