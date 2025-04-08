@@ -11,20 +11,23 @@ from cryptography.hazmat.backends import default_backend  # 显式指定后端
 
 db = SQLAlchemy()
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    
+
     # 初始化扩展
-    RBACService.init_app(db,app=app)
-    RBACService.init_app(self,app=app)
-    RBACService.init_app(jwt,app=app)
-    
+    RBACService.init_app(db, app=app)
+    RBACService.init_app(self, app=app)
+    RBACService.init_app(jwt, app=app)
+
     # CORS配置保持不变
     @app.after_request
     def add_cors_headers(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = (
+            "GET, POST, PUT, DELETE, OPTIONS"
+        )
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
@@ -37,9 +40,9 @@ def create_app():
     from api.auth_routes import auth_bp
     from api.data_routes import data_bp
     from api.admin_routes import admin_bp
-    
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(data_bp, url_prefix='/api/data')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    
+
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(data_bp, url_prefix="/api/data")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
+
     return app

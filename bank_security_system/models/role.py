@@ -1,28 +1,30 @@
 from . import db, BaseModel
 from .permission import Permission
 
+
 class Role(BaseModel):
-    __tablename__ = 'roles'
+    __tablename__ = "roles"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.String(255))
-    
+
     # 权限关系（一对多）
-    permissions = db.relationship('Permission', back_populates='role',
-                                 cascade='all, delete-orphan')
-    
+    permissions = db.relationship(
+        "Permission", back_populates="role", cascade="all, delete-orphan"
+    )
+
     # 角色继承（可选）
-    parent_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    children = db.relationship('Role', 
-                              backref=db.backref('parent', remote_side=[id]),
-                              cascade='all')
+    parent_id = db.Column(db.Integer, db.ForeignKey("roles.id"))
+    children = db.relationship(
+        "Role", backref=db.backref("parent", remote_side=[id]), cascade="all"
+    )
 
     def add_permission(self, resource_type, actions, constraints=None):
         """添加权限"""
         perm = Permission(
             resource_type=resource_type,
             allowed_actions=actions,
-            constraints=constraints or {}
+            constraints=constraints or {},
         )
         self.permissions.append(perm)
         return perm
@@ -43,7 +45,6 @@ class Role(BaseModel):
     def has_permission(self, resource_type, action):
         """检查权限（含继承）"""
         for perm in self.get_permissions():
-            if (perm.resource_type == resource_type and 
-                perm.has_action(action)):
+            if perm.resource_type == resource_type and perm.has_action(action):
                 return True
         return False
