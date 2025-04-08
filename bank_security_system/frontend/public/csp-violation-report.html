@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSP Report</title>
+    <script>
+    window.addEventListener('securitypolicyviolation', (e) => {
+        fetch('/api/csp-violation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                blockedURI: e.blockedURI,
+                violatedDirective: e.violatedDirective
+            })
+        });
+    });
+    </script>
+</head>
+<body></body>
+</html>
